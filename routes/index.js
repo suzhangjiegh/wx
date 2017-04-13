@@ -97,10 +97,14 @@ router.get('/pay',function (req, res) {
 	});
 
 	async.waterfall(tasklist, function (err, result) {
-
-		console.log('---------result-----------');
-		console.log(result);
-		res.render('wx/pay',result);
+		if (err) {
+			res.redirect('code');
+		}else{
+			console.log('---------result-----------');
+			console.log(result);
+			res.render('wx/pay',result);
+		}
+		
 	});	
 });
 

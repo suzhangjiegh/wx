@@ -254,7 +254,19 @@ module.exports.beforePay = function (ip,openid,price,number,notify_url,callback)
 		var nodes =select(doc,'//prepay_id');
 		var timeStamp =createTimestamp();
 
-		var prepay_id=nodes[0].firstChild.data;
+		var prepay_id;
+		try{
+			prepay_id=nodes[0].firstChild.data;
+		}catch(err){
+			console.log('------err-----');
+			console.log(err);
+			callback({code:500,mes:'请求错误'});
+			return;
+		}
+
+		
+
+
 		var package ='prepay_id='+prepay_id;
 		var signType='MD5';
 
