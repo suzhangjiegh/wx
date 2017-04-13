@@ -1,0 +1,26 @@
+{
+  "name": "wx",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www"
+  },
+  "dependencies": {
+    "body-parser": "~1.15.2",
+    "cookie-parser": "~1.4.3",
+    "debug": "~2.2.0",
+    "ejs": "~2.5.2",
+    "express": "~4.14.0",
+    "morgan": "~1.7.0",
+    "serve-favicon": "~2.3.0",
+    "eslint": "^3.14.1",
+    "memory-cache": "^0.1.4",
+    "md5": "^2.2.1",
+    "xml": "^1.0.1", 
+    "xpath.js":"^1.0.7",
+    "xmldom": "^0.1.27",
+    "sha1": "^1.1.1",
+    "request":"*",
+    "async":"^2.3.0"
+  }
+}
