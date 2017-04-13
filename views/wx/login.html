@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>微信登录</title>
+	<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1, user-scalable=no">
+	<script type="text/javascript" src="/js/jquery.js"></script>
+	<style type="text/css">
+	html,body{
+		margin: 0;
+		padding: 0;
+	}
+	img{
+		height: 150px;
+		width: 150px;
+	}
+	.header{
+		text-align: center;
+		margin: 100px auto 20px auto;
+	}
+	.a{
+		margin-top: 50px;
+		width: 100%;
+		text-align: center;
+	}
+	button{
+		padding: 5px 20px;
+		margin: 0 5px;
+		background: green;
+		border: 1px solid green;
+		border-radius: 4px;
+		color: #fff;
+	}
+</style>
+
+</head>
+<body>
+
+<%if(mes!= ''){%>
+	<h1>错误信息</h1>
+	<h2><%=mes%></h2>
+<%}else{%>
+	<div class="header">
+		<img src="<%= userMap.headimgurl%>" alt="" >
+		<h1><%=userMap.nickname%></h1>	
+	</div>
+<%}%>
+
+<div class="a">
+	<a href="/wx/pay">
+		<button>微信支付</button>	
+	</a>	
+</div>
+
+<div class="a">
+	<a href="/wx/wxcord">
+		<button>微信卡卷</button>	
+	</a>	
+</div>
+
+<script type="text/javascript">
+	
+</script>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>微信支付</title>
+	<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1, user-scalable=no">
+	<script type="text/javascript" src="/js/jquery.js"></script>
+	<script type="text/javascript" src="http://res.wx.qq.com/open/js/jweixin-1.2.0.js"></script>
+
+	<style type="text/css">
+		body{
+			margin: 0 auto;
+			width: 100%;
+		}
+		span{
+			font-size: 24px;
+		}
+
+		h5{
+			margin: 4px 10px;
+			font-weight: normal;
+		}
+		h5 > span{
+			color: red;
+			font-size: 0.83em;
+		}
+		.a{
+			margin-top: 50px;
+			width: 100%;
+			text-align: center;
+		}
+		button{
+			padding: 5px 20px;
+			margin: 0 5px;
+			background: green;
+			border: 1px solid green;
+			border-radius: 4px;
+			color: #fff;
+		}
+	</style>
+</head>
+<body>
+
+
+<span>jsSDKMap</span>
+<h5>appId <span><%=jsSDKMap.appId%></span></h5>
+<h5>timestamp <span><%=jsSDKMap.timeStamp%></span></h5>
+<h5>nonceStr <span><%=jsSDKMap.nonceStr%></span></h5>
+<h5>signature <span><%=jsSDKMap.signature%></span></h5>
+
+
+<span>beforePayMap</span>
+<h5>timeStamp <span><%=beforePayMap.timeStamp%></span></h5>
+<h5>nonceStr <span><%=beforePayMap.nonceStr%></span></h5>
+<h5>package <span><%=beforePayMap.package%></span></h5>
+<h5>signType <span><%=beforePayMap.signType%></span></h5>
+<h5>paySign <span><%=beforePayMap.paySign%></span></h5>
+
+<div class="a">
+<button  id="bt">支付</button>		
+</div>
+
+
+<div class="a">
+<button  id="bt">退款</button>		
+</div>
+
+
+<script type="text/javascript">
+wx.config({
+	debug: false, 
+    appId: '<%=jsSDKMap.appId%>', 
+    timestamp: '<%=jsSDKMap.timeStamp%>', 
+    nonceStr: '<%=jsSDKMap.nonceStr%>', 
+    signature: '<%=jsSDKMap.signature%>',
+    jsApiList: ['chooseWXPay'] 
+});
+wx.checkJsApi({
+	jsApiList: ['chooseWXPay'], // 需要检测的JS接口列表，所有JS接口列表见附录2,
+	success: function(res) {
+    	console.log(res);
+	}
+});
+wx.error(function(res){
+	JSON.stringify(res)
+});
+
+$('#bt').click(function () {
+	//因使用模拟器 success后 无法继续测试
+	wx.chooseWXPay({
+		timestamp:'<%=beforePayMap.timeStamp%>',
+		nonceStr:'<%=beforePayMap.nonceStr%>',
+		package:'<%=beforePayMap.package%>',
+		signType:'<%=beforePayMap.signType%>',
+		paySign:'<%=beforePayMap.paySign%>',
+		success: function (res) {
+				console.log(res);
+		}
+	});	
+});
+
+</script>
+</body>
+</html>

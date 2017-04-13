@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>微信jssdk</title>
+	<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1, user-scalable=no">
+	<script type="text/javascript" src="/js/jquery.js"></script>
+	<script type="text/javascript" src="http://res.wx.qq.com/open/js/jweixin-1.2.0.js"></script>
+
+	<style type="text/css">
+		body{
+			margin: 0 auto;
+			width: 100%;
+		}
+		span{
+			font-size: 24px;
+		}
+
+		h5{
+			margin: 4px 10px;
+			font-weight: normal;
+		}
+		h5 > span{
+			color: red;
+			font-size: 0.83em;
+		}
+		.a{
+			margin-top: 50px;
+			width: 100%;
+			text-align: center;
+		}
+		button{
+			padding: 5px 20px;
+			margin: 0 5px;
+			background: green;
+			border: 1px solid green;
+			border-radius: 4px;
+			color: #fff;
+		}
+	</style>
+</head>
+<body>
+
+
+<span>jsSDKMap</span>
+<h5>appId <span><%=jsSDKMap.appId%></span></h5>
+<h5>timestamp <span><%=jsSDKMap.timeStamp%></span></h5>
+<h5>nonceStr <span><%=jsSDKMap.nonceStr%></span></h5>
+<h5>signature <span><%=jsSDKMap.signature%></span></h5>
+
+<span>wxCordMap</span>
+<h5>timestamp <span><%=wxCordMap.timestamp%></span></h5>
+<h5>nonceStr <span><%=wxCordMap.nonceStr%></span></h5>
+<h5>signType <span>SHA1</span></h5>
+<h5>cardSign <span><%=wxCordMap.cardSign%></span></h5>
+
+
+<div class="a">
+<button  id="bt">卡卷</button>		
+</div>
+
+
+
+
+
+<script type="text/javascript">
+wx.config({
+	debug: true, 
+    appId: '<%=jsSDKMap.appId%>', 
+    timestamp: '<%=jsSDKMap.timeStamp%>', 
+    nonceStr: '<%=jsSDKMap.nonceStr%>', 
+    signature: '<%=jsSDKMap.signature%>',
+    jsApiList: ['chooseCard'] 
+});
+wx.checkJsApi({
+	jsApiList: ['chooseCard'], // 需要检测的JS接口列表，所有JS接口列表见附录2,
+	success: function(res) {
+    	//alert(res);
+	}
+});
+wx.error(function(res){
+	//alert(res);
+	JSON.stringify(res)
+});
+
+$('#bt').click(function () {
+	//因使用模拟器 success后 无法继续测试
+	wx.chooseCard({
+	   
+	    
+	    cardSign: '<%=wxCordMap.cardSign%>', // 卡券签名
+	    timestamp: '<%=wxCordMap.timestamp%>', // 卡券签名时间戳
+	    nonceStr: '<%=wxCordMap.nonceStr%>', //卡券签名随机串
+	    signType:'SHA1',
+	    success: function (res) {
+	        var cardList= res.cardList; // 用户选中的卡券列表信息
+	        //alert(cardList);
+	    }
+	});
+});
+
+</script>
+</body>
+</html>
