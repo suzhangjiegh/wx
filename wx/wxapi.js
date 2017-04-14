@@ -18,7 +18,7 @@ var createTimestamp = function () {
 };
 
 /**
- *  ssl 
+ *  ssl 微信退单需要使用
  */
 var key = fs.readFileSync('wx/ssl/apiclient_key.pem');
 var cert =fs.readFileSync('wx/ssl/apiclient_cert.pem');
@@ -44,14 +44,14 @@ module.exports.accessToken=function (callback) {
 
 	request(getAccessToken(),function (error, response, body) {
 		var accessMap = JSON.parse(body);
-		console.log('-----access_token---accessMap-----');
-		console.log(accessMap);
+		//console.log('-----access_token---accessMap-----');
+		//console.log(accessMap);
 
 		if (error) {
 			console.log('获取微信全局token失败');
 			callback({code:500,mes:'请求错误'});
 			return;
-		}		
+		}
 		console.log('获取微信全局token成功');			
 		cache.put('access_token',accessMap.access_token,7200*1000);
 		callback({code:200,access_token:accessMap.access_token});
@@ -63,8 +63,8 @@ module.exports.accessToken=function (callback) {
  * [openid 获取openid]
  */
 module.exports.openid = function (code,callback) {
-	console.log('-----code--------');
-	console.log(code);
+	//console.log('-----code--------');
+	//console.log(code);
 
 	function getOpenId() {
 		return 'https://api.weixin.qq.com/sns/oauth2/access_token'+
@@ -76,7 +76,7 @@ module.exports.openid = function (code,callback) {
 	request(getOpenId(),function (error, response, body) {
 		var ticketMap = JSON.parse(body);
 
-		console.log('-----openid-ticketMap-------');
+		//console.log('-----openid-ticketMap-------');
 		console.log(ticketMap);
 
 		if (error) {
@@ -90,9 +90,6 @@ module.exports.openid = function (code,callback) {
 
 /**
  * [userInfo 用户详情]
- * @param  {[type]}   openid   [description]
- * @param  {Function} callback [description]
- * @return {[type]}            [description]
  */
 module.exports.userInfo = function (openid,callback) {
 
@@ -109,7 +106,7 @@ module.exports.userInfo = function (openid,callback) {
 		request(getUserInfoUrl(),function (error, response, body) {
 			var userMap = JSON.parse(body);
 
-			console.log('-----userInfo--------');
+			//console.log('-----userInfo--------');
 			console.log(userMap);
 
 			if (error) {
@@ -147,7 +144,7 @@ module.exports.jsApiTicket =function (callback) {
 		request(getjsApiTicketUrl(),function (error, response, body) {
 
 			var jsaApiTicketMap = JSON.parse(body);
-			console.log('-----jsaApiTicketMap--------');
+			//console.log('-----jsaApiTicketMap--------');
 			console.log(jsaApiTicketMap);
 			
 			if (error) {
@@ -170,6 +167,9 @@ module.exports.jsApiTicket =function (callback) {
 		
 };
 
+/**
+ * [jssdk 的配置信息]
+ */
 module.exports.jsSDKMap=function (url,callback) {
 
 	var jsSDKMap = {
@@ -197,13 +197,7 @@ module.exports.jsSDKMap=function (url,callback) {
 };
 
 /**
- * [beforePay description]
- * @param  {[type]}   ip       [客户ip]
- * @param  {[type]}   openid   [用户标识]
- * @param  {[type]}   price    [订单金额]
- * @param  {[type]}   number   [自己生成的订单号]
- * @param  {Function} callback [description]
- * @return {[type]}            [description]
+ * [beforePay 生成订单]
  */
 module.exports.beforePay = function (ip,openid,price,number,notify_url,callback) {
 	var noncestr=createNonceStr();
@@ -258,14 +252,11 @@ module.exports.beforePay = function (ip,openid,price,number,notify_url,callback)
 		try{
 			prepay_id=nodes[0].firstChild.data;
 		}catch(err){
-			console.log('------err-----');
-			console.log(err);
+			//console.log('------err-----');
+			//console.log(err);
 			callback({code:500,mes:'请求错误'});
 			return;
 		}
-
-		
-
 
 		var package ='prepay_id='+prepay_id;
 		var signType='MD5';
@@ -298,6 +289,7 @@ module.exports.beforePay = function (ip,openid,price,number,notify_url,callback)
 		
 	});
 };
+
 
 module.exports.refund = function () {
 
@@ -351,8 +343,10 @@ module.exports.refund = function () {
 		console.log(body);
 	});
 };
-//this.refund();
 
+/**
+ * [wxCordToken 获得卡卷需要的凭证]
+ */
 module.exports.wxCordToken = function (callback) {
 	var api_ticket = cache.get('api_ticket');
 
@@ -389,6 +383,10 @@ module.exports.wxCordToken = function (callback) {
 		
 	});
 };
+
+/**
+ * [wxCordMap 传递到前端需要的签名,和其他配置信息]
+ */
 module.exports.wxCordMap = function (callback) {
 	this.wxCordToken(function (data) {
 		//console.log(data);
@@ -407,7 +405,7 @@ module.exports.wxCordMap = function (callback) {
 		var str = arr.sort().join('');
 		var cardSign =sha1(str);
 
-		console.log('-------cardSign-------');
+		//console.log('-------cardSign-------');
 		console.log(cardSign);
 
 		var wxCordMap = {
