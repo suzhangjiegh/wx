@@ -64,7 +64,7 @@
 
 <script type="text/javascript">
 wx.config({
-	debug: true, 
+	debug: false, 
     appId: '<%=jsSDKMap.appId%>', 
     timestamp: '<%=jsSDKMap.timeStamp%>', 
     nonceStr: '<%=jsSDKMap.nonceStr%>', 
@@ -74,12 +74,12 @@ wx.config({
 wx.checkJsApi({
 	jsApiList: ['chooseCard'], // 需要检测的JS接口列表，所有JS接口列表见附录2,
 	success: function(res) {
-    	//alert(res);
+    	
 	}
 });
 wx.error(function(res){
-	//alert(res);
-	JSON.stringify(res)
+	
+	console.log(res);
 });
 
 $('#bt').click(function () {
@@ -92,8 +92,20 @@ $('#bt').click(function () {
 	    nonceStr: '<%=wxCordMap.nonceStr%>', //卡券签名随机串
 	    signType:'SHA1',
 	    success: function (res) {
-	        var cardList= res.cardList; // 用户选中的卡券列表信息
+	        //var cardList= res.cardList; 
+	        var cardList =JSON.parse(res.cardList);
+	        console.log(cardList[0].encrypt_code);
 	        //alert(cardList);
+	        $.ajax({
+	        	url: "/wx/queryCode",
+  				type: "post",
+  				data:{
+  					encrypt_code:cardList[0].encrypt_code,
+  					card_id:cardList[0].card_id},
+  				success:function (data) {
+  					console.log(data);
+  				}
+  			});
 	    }
 	});
 });

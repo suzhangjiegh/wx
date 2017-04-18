@@ -6,8 +6,6 @@ var wxlogin =require('../wx/wxapi');
 
 var async = require('async');
 
-
-
 /**
  * localhost/wx/code
  * [description]
@@ -61,7 +59,7 @@ router.get('/pay',function (req, res) {
 	var price = 1;
 	//订单号
 	var number = Date.parse(new Date());
-	var notify_url = wxconfig.jssdkUrl;
+	//var notify_url = wxconfig.jssdkUrl;
 
 	var tasklist = [];
 	var data = {
@@ -85,7 +83,7 @@ router.get('/pay',function (req, res) {
 	});
 
 	tasklist.push(function (n,callback) {
-		wxlogin.beforePay(ip,openid,price,number,notify_url,function (d) {
+		wxlogin.beforePay(ip,openid,price,number,function (d) {
 			if (d.code ==200) {
 				data.beforePayMap = d.beforePayMap;
 				callback(null,data);
@@ -109,10 +107,16 @@ router.get('/pay',function (req, res) {
 });
 
 /**
+ * [微信下单]
+ */
+router.get('/payok',function (req, res) {
+
+});
+
+/**
  * [微信卡卷]
  */
 router.get('/wxcord',function (req, res) {
-
 
 	var data = {
 		jsSDKMap:{},
@@ -156,7 +160,15 @@ router.get('/wxcord',function (req, res) {
 
 });
 
-
+router.post('/queryCode',function (req, res) {
+	console.log('-----------queryCode------------');
+	
+	wxlogin.queryCode(req.body.encrypt_code,function (data) {
+		console.log('-----------encrypt_code------------');
+		console.log(data);
+		res.send(data);
+	});
+});
 
 
 module.exports = router;

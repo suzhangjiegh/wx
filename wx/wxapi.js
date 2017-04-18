@@ -24,6 +24,9 @@ var key = fs.readFileSync('wx/ssl/apiclient_key.pem');
 var cert =fs.readFileSync('wx/ssl/apiclient_cert.pem');
 var ca = [ fs.readFileSync('wx/ssl/rootca.pem')];
 
+
+var errData = {code:500,mes:'请求错误'};
+
 /**
  * [token 获得全局token]
  */
@@ -49,7 +52,7 @@ module.exports.accessToken=function (callback) {
 
 		if (error) {
 			console.log('获取微信全局token失败');
-			callback({code:500,mes:'请求错误'});
+			callback(errData);
 			return;
 		}
 		console.log('获取微信全局token成功');			
@@ -80,7 +83,7 @@ module.exports.openid = function (code,callback) {
 		console.log(ticketMap);
 
 		if (error) {
-			callback({code:500,mes:'请求错误'});
+			callback(errData);
 			return;
 		}
 		callback({code:200,openid:ticketMap.openid});		
@@ -95,7 +98,7 @@ module.exports.userInfo = function (openid,callback) {
 
 	this.accessToken(function (data) {	
 		if (data.code!=200) {
-			callback({code:500,mes:'请求错误'});
+			callback(errData);
 			return;
 		}
 		function getUserInfoUrl() {
@@ -110,7 +113,7 @@ module.exports.userInfo = function (openid,callback) {
 			console.log(userMap);
 
 			if (error) {
-				callback({code:500,mes:'请求错误'});
+				callback(errData);
 				return;
 			}
 			callback({code:200,userMap:userMap,mes:''});	
@@ -133,7 +136,7 @@ module.exports.jsApiTicket =function (callback) {
 		
 	this.accessToken(function (data) {
 		if (data.code!=200) {
-			callback({code:500,mes:'请求错误'});
+			callback(errData);
 			return;
 		}
 		function getjsApiTicketUrl() {
@@ -148,7 +151,7 @@ module.exports.jsApiTicket =function (callback) {
 			console.log(jsaApiTicketMap);
 			
 			if (error) {
-				callback({code:500,mes:'请求错误'});
+				callback(errData);
 				return;
 			}
 			
@@ -181,7 +184,7 @@ module.exports.jsSDKMap=function (url,callback) {
 
 	this.jsApiTicket(function(data){
 		if (data.code!=200) {
-			callback({code:500,mes:'请求错误'});
+			callback(errData);
 			return;
 		}
 		jsSDKMap.signature=sha1(
@@ -196,10 +199,170 @@ module.exports.jsSDKMap=function (url,callback) {
 	});
 };
 
+
+/**
+ * [wxCordToken 获得卡卷需要的凭证]
+ */
+module.exports.wxCordToken = function (callback) {
+	var api_ticket = cache.get('api_ticket');
+
+	if (api_ticket) {
+		callback({code:200,api_ticket:api_ticket});
+		return;
+	}
+
+	this.accessToken(function (data) {
+	
+		if (data.code!=200) {
+			callback(errData);
+			return;
+		}
+		function getCodeApiTicketUrl() {
+			return 'https://api.weixin.qq.com/cgi-bin/ticket/getticket'
+			+'?access_token='+data.access_token
+			+'&type=wx_card';
+		}
+
+		request(getCodeApiTicketUrl(),function (error, response, body) {
+
+			var accessMap = JSON.parse(body);	
+			if (error) {
+				console.log('获取微信全局token失败');
+				callback(errData);
+				return;
+			}
+			cache.put('api_ticket',accessMap.ticket,7200*1000);
+			callback({code:200,api_ticket:accessMap.ticket});		
+		});	
+	});
+};
+
+/**
+ * [wxCordMap 传递到前端需要的签名,和其他配置信息]
+ */
+module.exports.wxCordMap = function (callback) {
+	this.wxCordToken(function (data) {
+		//console.log(data);
+		var timestamp = createTimestamp();
+		var nonceStr = createNonceStr();
+		var api_ticket =data.api_ticket;
+		var appid =wxconfig.appid;
+		
+		var arr = [timestamp
+		,api_ticket
+		,nonceStr
+		,appid
+		];
+	
+		var str = arr.sort().join('');
+		var cardSign =sha1(str);
+
+		//console.log('-------cardSign-------');
+		console.log(cardSign);
+
+		var wxCordMap = {
+			timestamp:timestamp,
+			nonceStr:nonceStr,
+			cardSign:cardSign
+		};
+		callback({code:200,wxCordMap:wxCordMap});
+	});
+};
+
+/**
+ * [deCode 前端Code解码]
+ */
+module.exports.deCode = function (encrypt_code,callback) {
+	this.accessToken(function (data) {
+		if (data.code!=200) {
+			callback(errData);
+			return;
+		}
+		var access_token = data.access_token;
+
+		var decodeUrl= 'https://api.weixin.qq.com/card/code/decrypt?access_token='
+		+access_token;
+
+		request.post({
+			url:decodeUrl,
+			body:JSON.stringify({encrypt_code: encrypt_code})
+		},function (error, response, body) {
+			if (error) {
+				callback(errData);
+				return;
+			}
+			body = JSON.parse(body);
+			console.log('----deCode-------');
+			console.log(body.code);
+			callback({code:200,cardCode:body.code,access_token:access_token});
+		});
+	});
+};
+
+/**
+ * [queryCode 卡卷查询]
+ */
+module.exports.queryCode = function (encrypt_code,callback) {
+	console.log('------1-----');
+	this.deCode(encrypt_code,function (data) {
+		if (data.code!=200) {
+			console.log('------err-----');
+			callback(errData);
+			return;
+		}
+		var queryCodeUrl = 'https://api.weixin.qq.com/card/code/get?access_token='
+			+data.access_token;
+		request.post({
+			url:queryCodeUrl,
+			body:JSON.stringify({code: data.code})
+		},function (error, response, body) {
+			console.log(body);
+			var json =JSON.parse(body);
+
+			console.log('---------json--------');
+			console.log(json);
+			callback({code:200,data:body});
+		});
+	});
+};
+
+/*module.exports.wxtest =function () {
+	var timestamp =1491988005;
+	var api_ticket='IpK_1T69hDhZkLQTlwsAX7Lm9dKD5fopni-t6XiJNmUIoqILstyqUO8G_yV6xwHdOYuZgR54ssA6fhsEYY-P5w';
+	var nonceStr ='eeon3na4ppcts26';
+
+	var appid ='wx572bce4b281d30b2';
+	var card_type = '1';
+
+
+	console.log('-------appid-------');
+	console.log(appid);
+	
+	console.log('------api_ticket--------');
+	console.log(api_ticket);
+
+	console.log('------timestamp--------');
+	console.log(timestamp);
+
+	console.log('-----nonceStr---------');
+	console.log(nonceStr);
+
+	console.log('-------str-------');
+	console.log(str);
+
+	console.log('-------cardSign-------');
+	console.log(cardSign);
+	
+};
+this.wxtest();*/
+
 /**
  * [beforePay 生成订单]
  */
-module.exports.beforePay = function (ip,openid,price,number,notify_url,callback) {
+
+var pay_notify_url = 'http://pay.emomo.cc/wx/payok';
+
+module.exports.beforePay = function (ip,openid,price,number,callback) {
 	var noncestr=createNonceStr();
 	//商品描述
 	var body = 'This is a test';
@@ -207,7 +370,7 @@ module.exports.beforePay = function (ip,openid,price,number,notify_url,callback)
 	'&body='+body+
 	'&mch_id='+wxconfig.pay.mch_id+
 	'&nonce_str='+noncestr+
-	'&notify_url='+notify_url+
+	'&notify_url='+pay_notify_url+
 	'&openid='+openid+
 	'&out_trade_no='+number+
 	'&spbill_create_ip='+ip+
@@ -222,7 +385,7 @@ module.exports.beforePay = function (ip,openid,price,number,notify_url,callback)
 			{body:body},
 			{mch_id:wxconfig.pay.mch_id},
 			{nonce_str:noncestr},
-			{notify_url:notify_url},
+			{notify_url:pay_notify_url},
 			{openid:openid},
 			{out_trade_no:number},
 			{spbill_create_ip:ip},
@@ -242,7 +405,8 @@ module.exports.beforePay = function (ip,openid,price,number,notify_url,callback)
 		url:orderUrl(),
 		form:allXmlStr
 	},function (error, response, body) {
-		console.log(body);
+	
+		console.log('微信预下单\r\n',body);
 
 		var doc =new dom().parseFromString(body);
 		var nodes =select(doc,'//prepay_id');
@@ -254,7 +418,7 @@ module.exports.beforePay = function (ip,openid,price,number,notify_url,callback)
 		}catch(err){
 			//console.log('------err-----');
 			//console.log(err);
-			callback({code:500,mes:'请求错误'});
+			callback(errData);
 			return;
 		}
 
@@ -281,7 +445,7 @@ module.exports.beforePay = function (ip,openid,price,number,notify_url,callback)
 			paySign:paySign
 		};
 		if (error) {
-			callback({code:500,mes:'请求错误'});
+			callback(errData);
 			return;
 		}
 			
@@ -290,8 +454,17 @@ module.exports.beforePay = function (ip,openid,price,number,notify_url,callback)
 	});
 };
 
+/*module.exports.afterPay = function (req,res) {
+	var body = req.body;
+	var xmlStr =[{xml:[
+			{return_code: '![CDATA[SUCCESS]]'},
+	]}];
+	var allXmlStr= xml(xmlStr);
+	console.log(allXmlStr);
+};*/
 
-module.exports.refund = function () {
+//this.afterPay();
+/*module.exports.refund = function () {
 
 	var refundNo = '123456';
 	var tradeNo  = '1234567';
@@ -342,108 +515,6 @@ module.exports.refund = function () {
 	},function (error, response, body){
 		console.log(body);
 	});
-};
+};*/
 
-/**
- * [wxCordToken 获得卡卷需要的凭证]
- */
-module.exports.wxCordToken = function (callback) {
-	var api_ticket = cache.get('api_ticket');
-
-	if (api_ticket) {
-		callback({code:200,api_ticket:api_ticket});
-		return;
-	}
-
-	this.accessToken(function (data) {
-	
-		if (data.code!=200) {
-			callback({code:500,mes:'请求错误'});
-			return;
-		}
-		function getCodeApiTicketUrl() {
-			return 'https://api.weixin.qq.com/cgi-bin/ticket/getticket'
-			+'?access_token='+data.access_token
-			+'&type=wx_card';
-		}
-
-		request(getCodeApiTicketUrl(),function (error, response, body) {
-
-			var accessMap = JSON.parse(body);	
-			if (error) {
-				console.log('获取微信全局token失败');
-				callback({code:500,mes:'请求错误'});
-				return;
-			}
-
-			cache.put('api_ticket',accessMap.ticket,7200*1000);
-			callback({code:200,api_ticket:accessMap.ticket});
-			
-		});
-		
-	});
-};
-
-/**
- * [wxCordMap 传递到前端需要的签名,和其他配置信息]
- */
-module.exports.wxCordMap = function (callback) {
-	this.wxCordToken(function (data) {
-		//console.log(data);
-	
-		var timestamp = createTimestamp();
-		var nonceStr = createNonceStr();
-		var api_ticket =data.api_ticket;
-		var appid =wxconfig.appid;
-		
-		var arr = [timestamp
-		,api_ticket
-		,nonceStr
-		,appid
-		];
-	
-		var str = arr.sort().join('');
-		var cardSign =sha1(str);
-
-		//console.log('-------cardSign-------');
-		console.log(cardSign);
-
-		var wxCordMap = {
-			timestamp:timestamp,
-			nonceStr:nonceStr,
-			cardSign:cardSign
-		};
-		callback({code:200,wxCordMap:wxCordMap});
-	});
-};
-
-/*module.exports.wxtest =function () {
-	var timestamp =1491988005;
-	var api_ticket='IpK_1T69hDhZkLQTlwsAX7Lm9dKD5fopni-t6XiJNmUIoqILstyqUO8G_yV6xwHdOYuZgR54ssA6fhsEYY-P5w';
-	var nonceStr ='eeon3na4ppcts26';
-
-	var appid ='wx572bce4b281d30b2';
-	var card_type = '1';
-
-
-	console.log('-------appid-------');
-	console.log(appid);
-	
-	console.log('------api_ticket--------');
-	console.log(api_ticket);
-
-	console.log('------timestamp--------');
-	console.log(timestamp);
-
-	console.log('-----nonceStr---------');
-	console.log(nonceStr);
-
-	console.log('-------str-------');
-	console.log(str);
-
-	console.log('-------cardSign-------');
-	console.log(cardSign);
-	
-};
-this.wxtest();*/
 
