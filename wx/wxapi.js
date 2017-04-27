@@ -326,171 +326,470 @@ module.exports.queryCode = function (encrypt_code,callback) {
 	});
 };
 
-/*module.exports.wxtest =function () {
-	var timestamp =1491988005;
-	var api_ticket='IpK_1T69hDhZkLQTlwsAX7Lm9dKD5fopni-t6XiJNmUIoqILstyqUO8G_yV6xwHdOYuZgR54ssA6fhsEYY-P5w';
-	var nonceStr ='eeon3na4ppcts26';
-
-	var appid ='wx572bce4b281d30b2';
-	var card_type = '1';
-
-
-	console.log('-------appid-------');
-	console.log(appid);
-	
-	console.log('------api_ticket--------');
-	console.log(api_ticket);
-
-	console.log('------timestamp--------');
-	console.log(timestamp);
-
-	console.log('-----nonceStr---------');
-	console.log(nonceStr);
-
-	console.log('-------str-------');
-	console.log(str);
-
-	console.log('-------cardSign-------');
-	console.log(cardSign);
-	
-};
-this.wxtest();*/
-
 /**
- * [beforePay 生成订单]
+ * [jsSDKMap jssdk html 页面所需]
+ * @param  {[type]}   url      [html 所在的网址]
+ * @param  {Function} callback [description]
+ * @return {[type]}            [description]
  */
+/*module.exports.jsSDKMap=function (url,callback) {
+	var baseMsg = {
+		appId:wxOpt.wechat.appID,
+		appSecret:wxOpt.wechat.appSecret
+	};
 
-var pay_notify_url = 'http://pay.emomo.cc/wx/payok';
+	var jsSDKMap = {
+		appId:wxOpt.wechat.appID,
+		nonceStr:createNonceStr(),
+		timeStamp:createTimestamp(), 
+		signature:''
+	};
 
-module.exports.beforePay = function (ip,openid,price,number,callback) {
-	var noncestr=createNonceStr();
-	//商品描述
-	var body = 'This is a test';
-	var stringA='appid='+wxconfig.appid+
-	'&body='+body+
-	'&mch_id='+wxconfig.pay.mch_id+
-	'&nonce_str='+noncestr+
-	'&notify_url='+pay_notify_url+
-	'&openid='+openid+
-	'&out_trade_no='+number+
-	'&spbill_create_ip='+ip+
-	'&total_fee='+price+
-	'&trade_type='+wxconfig.pay.trade_type;
-
-	var stringSignTemp =stringA+'&key='+wxconfig.pay.key;
-	var sign = md5(stringSignTemp).toUpperCase();
-
-	var xmlStr =[{xml:[
-			{appid:wxconfig.appid},
-			{body:body},
-			{mch_id:wxconfig.pay.mch_id},
-			{nonce_str:noncestr},
-			{notify_url:pay_notify_url},
-			{openid:openid},
-			{out_trade_no:number},
-			{spbill_create_ip:ip},
-			{total_fee:price},
-			{trade_type:wxconfig.pay.trade_type},
-			{sign:sign}
-	]
-	}];
-	var allXmlStr= xml(xmlStr);
-	//console.log(allXmlStr);
-	
-	function orderUrl() {
-		return 'https://api.mch.weixin.qq.com/pay/unifiedorder';
-	}
-
-	request.post({
-		url:orderUrl(),
-		form:allXmlStr
-	},function (error, response, body) {
-	
-		console.log('微信预下单\r\n',body);
-
-		var doc =new dom().parseFromString(body);
-		var nodes =select(doc,'//prepay_id');
-		var timeStamp =createTimestamp();
-
-		var prepay_id;
-		try{
-			prepay_id=nodes[0].firstChild.data;
-		}catch(err){
-			//console.log('------err-----');
-			//console.log(err);
-			callback(errData);
+	this.getApiJsTicket(baseMsg,function(data){
+		if (data.code!='SUCCESS') {
+			callback({code:500,mes:'请求错误'});
 			return;
 		}
 
-		var package ='prepay_id='+prepay_id;
-		var signType='MD5';
 
-		var stringB ='appid='+wxconfig.appid+
-		'&nonceStr='+noncestr+
-		'&package='+package+
-		'&signType='+signType+
-		'&timeStamp='+timeStamp;
+		jsSDKMap.signature=sha1(
+			'jsapi_ticket=' + data.data + 
+			'&noncestr=' + jsSDKMap.nonceStr + 
+			'&timestamp=' + jsSDKMap.timeStamp + 
+			'&url=' + url);
 
-		var stringSignTempPay =stringB+'&key='+wxconfig.pay.key;
-		var paySign =md5(stringSignTempPay);
-		// sn =md5(number+price+'iwean');
-
-		console.log('stringB ='+stringB);
-
-		var beforePayMap = {
-			timeStamp:timeStamp,
-			nonceStr:noncestr,
-			package:package,
-			signType:signType,
-			paySign:paySign
-		};
-		if (error) {
-			callback(errData);
-			return;
-		}
-			
-		callback({code:200,beforePayMap:beforePayMap});
+		callback({code:200,jsSDKMap:jsSDKMap});
 		
 	});
-};
-
-/*module.exports.afterPay = function (req,res) {
-	var body = req.body;
-	var xmlStr =[{xml:[
-			{return_code: '![CDATA[SUCCESS]]'},
-	]}];
-	var allXmlStr= xml(xmlStr);
-	console.log(allXmlStr);
 };*/
 
-//this.afterPay();
-/*module.exports.refund = function () {
+/**
+ * [beforePay 预下订单]
+ * @param  {[type]}   req      [description]
+ * @param  {[type]}   openid   [wxopenid]
+ * @param  {Function} callback [description]
+ * @return {[type]}            [description]
+ *
+ * body.costInput  body.timeInput body.funcName 
+ */
+/*module.exports.beforePay = function (req,openid,callback) {
 
-	var refundNo = '123456';
-	var tradeNo  = '1234567';
-	var totalFee = '1';
-	var refundFee = '1'; 
+	// 订单详情
+	var body = req.body;
+
+	if (body.deviceInput ==undefined) {
+		callback({code:500,mes:'设备错误', subcode: 105});
+		return;
+	}
+
+	if (body.costInput ==undefined) {
+		callback({code:500,mes:'金额错误', subcode: 105});
+		return;
+	}
+
+	if (body.timeInput ==undefined) {
+		callback({code:500,mes:'时间错误', subcode: 105});
+		return;
+	}
+
+	console.log(body);
+	// 前端IP
+	var ip = bUtils.getClientIp(req);
+	if(ip.split(',').length>0){
+		ip = ip.split(',')[0];
+	}
+
+
+	var payType = 1;
+	var data = {
+		deviceSn: body.deviceInput,
+		cmdType: body.funcInput,
+		payAmount: body.costInput,
+		times: body.timeInput,
+		openId: openid,
+		payType: payType,
+		funcName: body.funcName
+	};
+	console.log('======================');
+	console.log(data);
+
+	var dat = JSON.stringify(data);
+
+	var opt = {
+		body: dat,
+		path: rest['proxy'].createOrder
+	};
+
+	console.log('请求参数：', opt);
+
+	bHttp.doPost(opt, function(status, data) {
+		console.log('-----------支付------------');
+		console.log(data);
+
+		if (data ==undefined && status!=200) {
+			callback({code:500, subcode: 105,mes:'服务器错误'});
+			return;
+		}
+
+		if (data.code == 'FAIL') {
+			console.log('---------1---------');
+			if (data.mes == 'ORDER_FAIL') {
+				console.log('---------2---------');
+				callback({code:500,mes:'服务器错误',subcode: 101 });
+				return;
+			} else if (data.mes == 'DEVICE_FORBID') {
+				console.log('---------3---------');
+				callback({code:500,mes:'服务器错误',subcode: 102 });
+				return;
+			} else if (data.mes == 'DEVICE_WORKING') {
+				console.log('---------4---------');
+				callback({ code:500,mes:'服务器错误',subcode: 103 });
+				return;
+			} else if (data.mes == 'DEVICE_NONE') {
+				console.log('---------5---------');
+				callback({ code:500,mes:'服务器错误',subcode: 104 });
+				return;
+			} else if (data.mes == 'DEVICE_OFF') {
+				console.log('---------6---------');
+				callback({ code:500,mes:'服务器错误',subcode: 105 });
+				return;	
+			}
+
+		}else if (data.code == 'SUCCESS') {
+			if (data.data == null || data.data == undefined) {
+				callback({code:500,mes:'服务器错误',subcode: 105});
+				return;
+			}
+
+			// 价格
+			var price = data.data.payAmount * 100;
+			// 设备ID
+			var deviceId = parseFloat(body.deviceInput);
+			// 订单号
+			var number = data.data.orderSn;
+
+			//支付成功的回调url 
+			var pay_notify_url = req.protocol + '://' + req.host + req.originalUrl + '/callback';
+			var noncestr=createNonceStr();
+
+			//附加数据 微信会返回
+			var attach =  body.timeInput + '-' +  body.funcName ;
+			var goods_tag ='按摩支付';
+			//商品描述
+			//var bodyAbout = body.timeInput+'分钟'+body.funcName;
+			var bodyAbout =data.data.times + '分钟e摩摩按摩费用';
+
+			var stringA='appid='+wxOpt.wechat.appID+
+			'&attach='+attach+
+			'&body='+bodyAbout+
+			'&goods_tag='+goods_tag+
+			'&mch_id='+wxOpt.pay.mch_id+
+			'&nonce_str='+noncestr+
+			'&notify_url='+pay_notify_url+
+			'&openid='+openid+
+			'&out_trade_no='+number+
+			'&spbill_create_ip='+ip+
+			'&total_fee='+price+
+			'&trade_type='+wxOpt.pay.trade_type;
+
+			var stringSignTemp =stringA+'&key='+wxOpt.pay.key;
+			var sign = md5(stringSignTemp).toUpperCase();
+
+			var xmlStr =[{xml:[
+					{appid:wxOpt.wechat.appID},
+					{attach:attach},
+					{body:bodyAbout},
+					{goods_tag:goods_tag},
+					{mch_id:wxOpt.pay.mch_id},
+					{nonce_str:noncestr},
+					{notify_url:pay_notify_url},
+					{openid:openid},
+					{out_trade_no:number},
+					{spbill_create_ip:ip},
+					{total_fee:price},
+					{trade_type:wxOpt.pay.trade_type},
+					{sign:sign}
+			]
+			}];
+
+			var allXmlStr= xml(xmlStr);
+			console.log('-----------订单签名xml-------');
+			console.log(allXmlStr);
+			
+			var orderUrl = 'https://api.mch.weixin.qq.com/pay/unifiedorder';
+
+			request.post({
+				url:orderUrl,
+				form:allXmlStr},function (error, response, body1) {
+
+				if (error) {
+					console.log(error);
+					callback({code:500,mes:'请求错误', subcode: 105});
+					return;
+				}
+
+				console.log('------微信预下单结果xml--------');
+				console.log(body1);
+				var doc =new dom().parseFromString(body1);
+				
+				var timeStamp =createTimestamp();
+				var prepay_id;
+				var return_code;
+				try{
+			
+					return_code = select(doc,'//return_code');
+					return_code= return_code[0].firstChild.data;
+					console.log('------微信预下单code---------');
+					console.log(return_code);
+
+					if (return_code !='SUCCESS') {
+						callback({code:500,mes:'下单错误', subcode: 105});
+						return;
+					}
+					prepay_id =select(doc,'//prepay_id');
+					prepay_id=prepay_id[0].firstChild.data;
+				}catch(err){
+					//console.log('------err-----');
+					//console.log(err);
+					callback({code:500,mes:'请求错误', subcode: 105});
+					return;
+				}
+
+				var package ='prepay_id='+prepay_id;
+				var signType='MD5';
+				var stringB ='appId='+wxOpt.wechat.appID+
+				'&nonceStr='+noncestr+
+				'&package='+package+
+				'&signType='+signType+
+				'&timeStamp='+timeStamp;
+				var stringSignTempPay =stringB+'&key='+wxOpt.pay.key;
+				var paySign =md5(stringSignTempPay).toUpperCase();
+				// sn =md5(number+price+'iwean');
+				console.log('stringB ='+stringB);
+
+				var beforePayMap = {
+					timeStamp:timeStamp,
+					nonceStr:noncestr,
+					package:package,
+					signType:signType,
+					paySign:paySign
+				};
+				
+				//为了支付成功校验
+				
+
+				callback({code:200,beforePayMap:beforePayMap,subcode: 100});
+				
+			});
+		} 
+		
+	});
+	
+};*/
+
+/**
+ * [payCallback 支付成功回调]
+ * @param  {[type]} req [description]
+ * @param  {[type]} res [description]
+ * @return {[type]}     [description]
+ */
+/*module.exports.payCallback = function(req, res){
+
+
+	console.log('===========微信支付成功返回================');
+	console.log(req.body);
+
+    that = this;
+	xml2js.parseString(req.body,{explicitArray:false,ignoreAttrs:true },function (err,result){
+		
+		var body = result.xml ;
+		var redisNumber = body.out_trade_no ;
+
+		bUtils.getRedisData('out_trade_no'+redisNumber,function (data) {
+
+			if (data.status) {
+				return;
+			}
+
+			var wxsign = '';
+			var str = '';
+			for (var obj in body) {
+				if (obj == 'sign') {
+					wxsign = body[obj];
+					continue;
+				}
+				str =str + obj +'=' + body[obj] + '&' 
+			}
+			str = str + 'key='+wxOpt.pay.key;
+			var sign = md5(str).toUpperCase();
+		
+
+			if (sign != wxsign) {
+				console.log('微信支付callback sign error');
+				return ;
+			}
+
+			if (body.return_code != 'SUCCESS') {
+				console.log('微信支付callback return_code fail');
+				return ;
+			}
+			console.log('微信支付callback SUCCESS');
+		
+
+			bUtils.setRedisData('out_trade_no'+redisNumber,redisNumber, 600);
+			
+			that.sendPayMessage(req.body);
+				
+		});
+	});
+
+	//  返回给微信 不可多次调用需处理
+	var allXmlStr= '<xml><return_code><![CDATA[SUCCESS]]></return_code></xml>';
+	res.status(200).send(allXmlStr);	
+};*/
+
+/**
+ * [sendPayMessage 发送成功信息给java]
+ * @param  {[type]} url [description]
+ * @param  {[type]} xml [description]
+ * @return {[type]}     [description]
+ */
+/*module.exports.sendPayMessage = function (xml) {
+	var postData = { xml: xml };
+	var dat = JSON.stringify(postData);
+	
+	var opt = {
+		body: dat,
+		path: rest['proxy'].wxPayNotity
+
+	};
+	console.log(opt);
+	bHttp.doPost(opt, function(status, data) {
+		console.log('-------sendPayMessage-----cb----');
+		console.log(data);
+	});
+};*/
+
+/**
+ * [orderErrPush description]
+ * @param  {[type]} openid [用户信息]
+ * @param  {[type]} tradeNo[订单号]
+ * @param  {[type]} time   [下单时间]
+ * @return {[type]}        [description]
+ */
+/*module.exports.orderErrPush = function (openid,tradeNo,time,callback) {
+
+	var baseMsg ={
+		appId:wxOpt.wechat.appID,
+		appSecret:wxOpt.wechat.appSecret
+	};
+
+	this.getWxGlobalAccessToken(baseMsg,function (data) {
+		
+		var message ={
+			access_token:data.data,
+			touser:openid,
+			template_id: wxOpt.push.order_template_id,
+			url:'http://test.emomo.cc/wechat/refund'+'?tradeNo='+tradeNo,
+			first:'您的订单异常',
+			keyword1:tradeNo,
+			keyword2:time,
+			keyword3:'按摩费用',
+			keyword4:'设备启动失败',
+			remark:'点击申请退单'
+		};
+	
+		var pushUrl = 'https://api.weixin.qq.com/cgi-bin/message/template/send'
+		+'?access_token='+ message.access_token;
+		
+		var json = {
+			'touser':message.touser,
+			'template_id':message.template_id,
+			'url':message.url,            
+			'data':{
+				'first': {
+					'value':message.first,
+					'color':'#173177'
+				},
+				'keyword1':{
+					'value':message.keyword1,
+					'color':'#173177'
+				},
+				'keyword2': {
+					'value':message.keyword2,
+					'color':'#173177'
+				},
+				'keyword3': {
+					'value':message.keyword3,
+					'color':'#173177'
+				},
+				'keyword4': {
+					'value':message.keyword4,
+					'color':'#173177'
+				},
+				'remark':{
+					'value':message.remark,
+					'color':'#173177'
+				}
+			}
+		};
+	
+		request.post({
+			url:pushUrl,
+			json: true,
+			headers: {'content-type': 'application/json'},
+			body:json },function (error, response, body){
+			
+			if (error) {
+				console.log('========================');
+				console.log('推送错误订单  '+tradeNo+'  失败');
+				console.log('========================');
+			}else{
+				console.log('推送错误订单  '+tradeNo+'  成功');	
+			}
+		
+		});
+	});
+};*/
+
+/**
+ * [refund 退款]
+ * @param  {[type]}   tradeNo   [商户订单号]
+ * @param  {[type]}   totalFee  [订单金额]
+ * @param  {[type]}   refundFee [退款金额]
+ * @param  {Function} callback  [description]
+ * @return {[type]}             [description]
+ */
+/*module.exports.refund = function (tradeNo,totalFee,refundFee,callback) {
+
+	var refundNo = 'T'+ tradeNo;
+	
+	console.log('-------退款信息------');
+	console.log(refundNo);
+	console.log(tradeNo);
+	console.log(totalFee);
+	console.log(refundFee);
 
 	var noncestr=createNonceStr();
 	//var transaction_id = '';
-	var stringA='appid='+wxconfig.appid+
-	'&mch_id='+wxconfig.pay.mch_id+
+	var stringA='appid='+wxOpt.wechat.appID+
+	'&mch_id='+wxOpt.pay.mch_id+
 	'&nonce_str='+noncestr+
-	'&op_user_id='+wxconfig.pay.mch_id+
+	'&op_user_id='+wxOpt.pay.mch_id+
 	'&out_refund_no='+refundNo+
 	'&out_trade_no='+tradeNo+
 	'&refund_fee='+refundFee+
 	'&total_fee='+totalFee;
 	//'&transaction_id='+transaction_id;
 
-	var stringSignTemp =stringA+'&key='+wxconfig.pay.key;
+	var stringSignTemp =stringA+'&key='+wxOpt.pay.key;
 	var sign = md5(stringSignTemp).toUpperCase();
 
 	var xmlStr =[{xml:[
-			{appid:wxconfig.appid},
-			{mch_id:wxconfig.pay.mch_id},
+			{appid:wxOpt.wechat.appID},
+			{mch_id:wxOpt.pay.mch_id},
 			{nonce_str:noncestr},
-			{op_user_id:wxconfig.pay.mch_id},
+			{op_user_id:wxOpt.pay.mch_id},
 			{out_refund_no:refundNo},
 			{out_trade_no:tradeNo},
 			{refund_fee:refundFee},
@@ -513,8 +812,14 @@ module.exports.beforePay = function (ip,openid,price,number,callback) {
 		ca:ca,
 		rejectUnauthorized:true
 	},function (error, response, body){
+
+		if (error) {
+			callback({code:500,mes:'退款失败'});
+			return;
+		}
+		//成功 微信会推送模版
+		console.log('-------微信返回信息------');
 		console.log(body);
+		callback({code:200,mes:'退款成功'});
 	});
 };*/
-
-
