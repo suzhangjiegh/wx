@@ -326,6 +326,8 @@ module.exports.queryCode = function (encrypt_code,callback) {
 	});
 };
 
+
+
 /**
  * [jsSDKMap jssdk html 页面所需]
  * @param  {[type]}   url      [html 所在的网址]
@@ -335,6 +337,7 @@ module.exports.queryCode = function (encrypt_code,callback) {
 /*module.exports.jsSDKMap=function (url,callback) {
 	var baseMsg = {
 		appId:wxOpt.wechat.appID,
+
 		appSecret:wxOpt.wechat.appSecret
 	};
 
