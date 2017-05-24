@@ -435,28 +435,7 @@ module.exports.queryCode = function (encrypt_code,callback) {
 		}
 
 		if (data.code == 'FAIL') {
-			console.log('---------1---------');
-			if (data.mes == 'ORDER_FAIL') {
-				console.log('---------2---------');
-				callback({code:500,mes:'服务器错误',subcode: 101 });
-				return;
-			} else if (data.mes == 'DEVICE_FORBID') {
-				console.log('---------3---------');
-				callback({code:500,mes:'服务器错误',subcode: 102 });
-				return;
-			} else if (data.mes == 'DEVICE_WORKING') {
-				console.log('---------4---------');
-				callback({ code:500,mes:'服务器错误',subcode: 103 });
-				return;
-			} else if (data.mes == 'DEVICE_NONE') {
-				console.log('---------5---------');
-				callback({ code:500,mes:'服务器错误',subcode: 104 });
-				return;
-			} else if (data.mes == 'DEVICE_OFF') {
-				console.log('---------6---------');
-				callback({ code:500,mes:'服务器错误',subcode: 105 });
-				return;	
-			}
+			
 
 		}else if (data.code == 'SUCCESS') {
 			if (data.data == null || data.data == undefined) {
@@ -480,7 +459,7 @@ module.exports.queryCode = function (encrypt_code,callback) {
 			var goods_tag ='按摩支付';
 			//商品描述
 			//var bodyAbout = body.timeInput+'分钟'+body.funcName;
-			var bodyAbout =data.data.times + '分钟e摩摩按摩费用';
+			var bodyAbout =data.data.times + '';
 
 			var stringA='appid='+wxOpt.wechat.appID+
 			'&attach='+attach+
@@ -697,7 +676,7 @@ module.exports.queryCode = function (encrypt_code,callback) {
 			first:'您的订单异常',
 			keyword1:tradeNo,
 			keyword2:time,
-			keyword3:'按摩费用',
+			keyword3:'',
 			keyword4:'设备启动失败',
 			remark:'点击申请退单'
 		};
@@ -754,6 +733,9 @@ module.exports.queryCode = function (encrypt_code,callback) {
 		});
 	});
 };*/
+/*var key = fs.readFileSync(path.join(__dirname, 'wxpay/apiclient_key.pem'),'utf-8');
+var cert =fs.readFileSync(path.join(__dirname, 'wxpay/apiclient_cert.pem'),'utf-8');
+var ca = [fs.readFileSync(path.join(__dirname, 'wxpay/rootca.pem'), 'utf-8')];*/
 
 /**
  * [refund 退款]
